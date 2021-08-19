@@ -76,32 +76,37 @@ namespace VolumeShortcut
 
         public IntPtr HookProcedure(int nCode, IntPtr wParam, IntPtr lParam)
         {
+            bool terminated = false;
             if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
             {
                 var kb = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
                 var vkCode = (int)kb.vkCode;
-                OnKeyDownEvent(vkCode);
+                terminated = OnKeyDownEvent(vkCode);
             }
             else if (nCode >= 0 && (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP))
             {
                 var kb = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
                 var vkCode = (int)kb.vkCode;
-                OnKeyUpEvent(vkCode);
+                terminated = OnKeyUpEvent(vkCode);
             }
-            return CallNextHookEx(hookId, nCode, wParam, lParam);
+            return terminated ? (IntPtr)1 : CallNextHookEx(hookId, nCode, wParam, lParam);
         }
 
         public delegate void KeyEventHandler(object sender, KeyEventArgs e);
         public event KeyEventHandler KeyDownEvent;
         public event KeyEventHandler KeyUpEvent;
 
-        protected void OnKeyDownEvent(int keyCode)
+        protected bool OnKeyDownEvent(int keyCode)
         {
-            KeyDownEvent?.Invoke(this, new KeyEventArgs(keyCode));
+            var e = new KeyEventArgs(keyCode);
+            KeyDownEvent?.Invoke(this, e);
+            return e.Terminated;
         }
-        protected void OnKeyUpEvent(int keyCode)
+        protected bool OnKeyUpEvent(int keyCode)
         {
-            KeyUpEvent?.Invoke(this, new KeyEventArgs(keyCode));
+            var e = new KeyEventArgs(keyCode);
+            KeyUpEvent?.Invoke(this, e);
+            return e.Terminated;
         }
 
     }

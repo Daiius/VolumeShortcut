@@ -10,9 +10,12 @@ namespace VolumeShortcut
     {
         public int KeyCode { get; }
 
+        public bool Terminated { get; set; }
+
         public KeyEventArgs(int keyCode)
         {
             KeyCode = keyCode;
+            Terminated = false;
         }
     }
 }

@@ -9,6 +9,8 @@ using System.Windows;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
+using AudioSwitcher.AudioApi.CoreAudio;
+
 namespace VolumeShortcut
 {
     /// <summary>
@@ -39,13 +41,14 @@ namespace VolumeShortcut
 
             var icon = GetResourceStream(new Uri("outline_keyboard_alt_white_48dp.ico", UriKind.Relative)).Stream;
             var menu = new System.Windows.Forms.ContextMenuStrip();
-            menu.Items.Add("修了", null, Exit_Click);
+            menu.Items.Add("終了", null, Exit_Click);
 
             var notifyIcon = new System.Windows.Forms.NotifyIcon
             {
                 Visible = true,
                 Icon = new System.Drawing.Icon(icon),
-                Text = "Volume Shortcut"
+                Text = "Volume Shortcut",
+                ContextMenuStrip = menu
             };
 
             handle = new WindowInteropHelper(window).Handle;
@@ -60,21 +63,33 @@ namespace VolumeShortcut
         private void Hooker_KeyUpEvent(object sender, KeyEventArgs e)
         {
             //var str = converter.ConvertToString(e.KeyCode);
-            if (e.KeyCode == 145 || e.KeyCode == 45) isScrollLockPressed = false;
+            if (e.KeyCode == 145 || e.KeyCode == 45 || e.KeyCode == 19) isScrollLockPressed = false;
         }
 
         private void Hooker_KeyDownEvent(object sender, KeyEventArgs e)
         {
             //var str = converter.ConvertToString(e.KeyCode) + " Down";
-            if (e.KeyCode == 145 || e.KeyCode == 45) isScrollLockPressed = true;
+            if (e.KeyCode == 145 || e.KeyCode == 45 || e.KeyCode == 19)
+            {
+                isScrollLockPressed = true;
 
-            if (isScrollLockPressed && e.KeyCode == 101)
-            {
-                SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_UP);
             }
-            else if (isScrollLockPressed && e.KeyCode == 40)
+
+            if (isScrollLockPressed && e.KeyCode == 38) // 38 == VK_UP
             {
-                SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_DOWN);
+                //SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_UP);
+                var dpd = new CoreAudioController().DefaultPlaybackDevice;
+                dpd.SetVolumeAsync(Math.Min(dpd.Volume + 2, 100));
+                
+                e.Terminated = true;
+            }
+            else if (isScrollLockPressed && e.KeyCode == 40) // 40 == VK_DOWN
+            {
+                //SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_DOWN);
+                var dpd = new CoreAudioController().DefaultPlaybackDevice;
+                dpd.SetVolumeAsync(Math.Max(dpd.Volume - 2, 0));
+
+                e.Terminated = true;
             }
         }
 
